@@ -17,16 +17,14 @@
 
 #![deny(missing_docs)]
 
-use tokio;
-use tokio_stdin_stdout;
 #[macro_use]
 extern crate log;
 
 pub use jsonrpc_core;
 
+use futures::prelude::{Future, Stream};
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
-use tokio::prelude::{Future, Stream};
 use tokio_codec::{FramedRead, FramedWrite, LinesCodec};
 
 /// Stdio server builder
@@ -49,7 +47,7 @@ impl ServerBuilder {
 	/// The server reads from STDIN line-by-line, one request is taken
 	/// per line and each response is written to STDOUT on a new line.
 	pub fn build(&self) {
-		tokio::run(self.build_future());
+		tokio_compat::run(self.build_future());
 	}
 
 	/// Returns a future that processes requests until EOF is read or until an error occurs. The
