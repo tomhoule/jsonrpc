@@ -49,6 +49,13 @@ impl ServerBuilder {
 	/// The server reads from STDIN line-by-line, one request is taken
 	/// per line and each response is written to STDOUT on a new line.
 	pub fn build(&self) {
+		tokio::run(self.build_future());
+	}
+
+	/// Returns a future that processes requests until EOF is read or until an error occurs. The
+	/// server reads from STDIN line-by-line, one request is taken per line and each response is
+	/// written to STDOUT on a new line.
+	pub fn build_future(&self) -> impl Future<Item = (), Error = ()> {
 		let stdin = tokio_stdin_stdout::stdin(0);
 		let stdout = tokio_stdin_stdout::stdout(0).make_sendable();
 
@@ -56,13 +63,12 @@ impl ServerBuilder {
 		let framed_stdout = FramedWrite::new(stdout, LinesCodec::new());
 
 		let handler = self.handler.clone();
-		let future = framed_stdin
+
+		framed_stdin
 			.and_then(move |line| process(&handler, line).map_err(|_| unreachable!()))
 			.forward(framed_stdout)
 			.map(|_| ())
-			.map_err(|e| panic!("{:?}", e));
-
-		tokio::run(future);
+			.map_err(|e| panic!("{:?}", e))
 	}
 }
 
